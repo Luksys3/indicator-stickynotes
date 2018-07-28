@@ -1,17 +1,17 @@
 # Copyright © 2012-2018 Umang Varma <umang.me@gmail.com>
-# 
+#
 # This file is part of indicator-stickynotes.
-# 
+#
 # indicator-stickynotes is free software: you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or (at your
 # option) any later version.
-# 
+#
 # indicator-stickynotes is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 # more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along with
 # indicator-stickynotes.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -43,6 +43,7 @@ class StickyNote:
         self.note = note
         self.noteset = note.noteset
         self.locked = self.note.properties.get("locked", False)
+        self.http_monitor = self.note.properties.get("http_monitor", False)
 
         # Create menu
         self.menu = Gtk.Menu()
@@ -55,7 +56,7 @@ class StickyNote:
         self.css = Gtk.CssProvider()
 
         self.build_note()
-        
+
     def build_note(self):
         self.builder = Gtk.Builder()
         GObject.type_register(GtkSource.View)
@@ -66,7 +67,7 @@ class StickyNote:
 
         # Get necessary objects
         widgets = ["txtNote", "bAdd", "imgAdd", "imgResizeR", "eResizeR",
-                "bLock", "imgLock", "imgUnlock", "imgClose", "imgDropdown",
+                "bLock", "imgLock", "bHTTPMonitor", "imgUnlock", "imgHTTPMonitorOn", "imgHTTPMonitorOff", "imgClose", "imgDropdown",
                 "bClose", "confirmDelete", "movebox1", "movebox2"]
         for w in widgets:
             setattr(self, w, self.builder.get_object(w))
@@ -101,6 +102,9 @@ class StickyNote:
         # Set locked state
         self.set_locked_state(self.locked)
 
+        # Set HTTP monitor state
+        self.set_http_monitor_state(self.http_monitor)
+
         # call set_keep_above just to have the note appearing
         # above everything else.
         # without it, it still won't appear above a window
@@ -120,7 +124,7 @@ class StickyNote:
     # (property necessary to prevent sticky note from showing on the taskbar)
 
     # workaround which is based on deleting a sticky note and re-initializing
-    # it. 
+    # it.
     def show(self, widget=None, event=None, reload_from_backend=False):
         """Shows the stickynotes window"""
 
@@ -162,7 +166,9 @@ class StickyNote:
     def properties(self):
         """Get properties of the current note"""
         prop = {"position":self.winMain.get_position(),
-                "size":self.winMain.get_size(), "locked":self.locked}
+                "size":self.winMain.get_size(),
+                "locked":self.locked,
+                "http_monitor":self.http_monitor}
         if not self.winMain.get_visible():
             prop["position"] = self.note.properties.get("position", (10, 10))
             prop["size"] = self.note.properties.get("size", (200, 150))
@@ -193,7 +199,9 @@ class StickyNote:
         thresh_sat = 1.05 - 1.7*((v-1)**2)
         suffix = "-dark" if s >= thresh_sat else ""
         iconfiles = {"imgAdd":"add", "imgClose":"close", "imgDropdown":"menu",
-                "imgLock":"lock", "imgUnlock":"unlock", "imgResizeR":"resizer"}
+                "imgLock":"lock", "imgUnlock":"unlock",
+                "imgHTTPMonitorOn":"lock", "imgHTTPMonitorOff":"unlock",
+                "imgResizeR":"resizer"}
         for img, filename in iconfiles.items():
             getattr(self, img).set_from_file(
                     os.path.join(os.path.dirname(__file__), "..","Icons/" +
@@ -278,7 +286,7 @@ class StickyNote:
 
     def popup_menu(self, button, *args):
         """Pops up the note's menu"""
-        self.menu.popup(None, None, None, None, Gdk.BUTTON_PRIMARY, 
+        self.menu.popup(None, None, None, None, Gdk.BUTTON_PRIMARY,
                 Gtk.get_current_event_time())
 
     def set_category(self, widget, cat):
@@ -301,9 +309,39 @@ class StickyNote:
 
     def lock_clicked(self, *args):
         """Toggle the locked state of the note"""
+        print('Lock button clicked')
         self.set_locked_state(not self.locked)
 
+    def set_http_monitor_state(self, state):
+        self.http_monitor = state
+        self.bHTTPMonitor.set_image({True:self.imgHTTPMonitorOn,
+            False:self.imgHTTPMonitorOff}[self.http_monitor])
+        self.bHTTPMonitor.set_tooltip_text({True: _("Stop HTTP monitor"),
+            False: _("Start HTTP monitor")}[self.http_monitor])
+
+    def start_http_monitor(self, *args):
+        print('Starting http monitor')
+
+    def stop_http_monitor(self, *args):
+        print('Stopping http monitor')
+
+    def http_monitor_clicked(self, *args):
+        print('Toggle http monitor')
+        # self.set_http_monitor_state(not self.http_monitor)
+        self.show_http_monitor_settings_dialog()
+
+    def show_http_monitor_settings_dialog(self):
+        glade_file = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                '..', "HTTPMonitorDialog.ui"))
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file(glade_file)
+        self.builder.connect_signals(self)
+        winHTTPMonitor = self.builder.get_object("HTTPMonitorSettingsWindow")
+        ret = winHTTPMonitor.run()
+        winHTTPMonitor.destroy()
+
     def focus_out(self, *args):
+        print('Note saved.');
         self.save(*args)
 
 def show_about_dialog():
@@ -393,7 +431,7 @@ class SettingsCategory:
             rgba = Gdk.RGBA()
             self.cbBG.get_rgba(rgba)
             # Some versions of GObjectIntrospection are affected by
-            # https://bugzilla.gnome.org/show_bug.cgi?id=687633 
+            # https://bugzilla.gnome.org/show_bug.cgi?id=687633
         hsv = colorsys.rgb_to_hsv(rgba.red, rgba.green, rgba.blue)
         self.noteset.categories[self.cat]["bgcolor_hsv"] = hsv
         for note in self.noteset.notes:

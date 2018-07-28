@@ -1,17 +1,17 @@
 # Copyright © 2012-2015 Umang Varma <umang.me@gmail.com>
-# 
+#
 # This file is part of indicator-stickynotes.
-# 
+#
 # indicator-stickynotes is free software: you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or (at your
 # option) any later version.
-# 
+#
 # indicator-stickynotes is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 # more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along with
 # indicator-stickynotes.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -31,6 +31,7 @@ class Note:
         self.uuid = content.get('uuid')
         self.body = content.get('body','')
         self.properties = content.get("properties", {})
+        print('Properties:', self.properties)
         self.category = category or content.get("cat", "")
         if not self.category in self.noteset.categories:
             self.category = ""
@@ -82,6 +83,13 @@ class Note:
         else:
             self.gui.set_locked_state(locked)
 
+    def set_http_monitor_state(self, state):
+        # if gui hasn't been initialized, just change the property
+        if self.gui == None:
+            self.properties["http_monitor"] = state
+        else:
+            self.gui.set_http_monitor_state(state)
+
     def cat_prop(self, prop):
         """Gets a property of the note's category"""
         return self.noteset.get_category_property(self.category, prop)
@@ -119,7 +127,7 @@ class NoteSet:
             fsock.write(output)
 
     def open(self, path=''):
-        with open(path or expanduser(self.data_file), 
+        with open(path or expanduser(self.data_file),
                 encoding='utf-8') as fsock:
             self.loads(fsock.read())
 
@@ -204,4 +212,3 @@ class dGUI:
         pass
     def properties(self):
         return None
-
