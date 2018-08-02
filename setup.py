@@ -1,20 +1,20 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# 
+#
 # Copyright © 2012-2018 Umang Varma <umang.me@gmail.com>
-# 
+#
 # This file is part of indicator-stickynotes.
-# 
+#
 # indicator-stickynotes is free software: you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or (at your
 # option) any later version.
-# 
+#
 # indicator-stickynotes is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 # more details.
-# 
+#
 # You should have received a copy of the GNU General Public License along with
 # indicator-stickynotes.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -30,13 +30,15 @@ import os
 import sys
 import shutil
 
+# padaryt gal kad kazkaip tas libas butu paciam githube
+
 sys.dont_write_bytecode = True
 from stickynotes.info import PO_DIR, MO_DIR, LOCALE_DOMAIN
 sys.dont_write_bytecode = False
 
 class BuildPo(Command):
     """Builds translation files
-    
+
     This is useful for testing translations that haven't been installed"""
     user_options = []
     def initialize_options(self):
@@ -82,7 +84,7 @@ class InstallData(distutils.command.install_data.install_data):
 def main():
     # Default data files
     data_files = [('', ('COPYING', 'style.css', 'StickyNotes.ui',
-                    'style_global.css', 'GlobalDialogs.ui',
+                    'style_global.css', 'GlobalDialogs.ui', 'HTTPMonitorSettings.ui',
                     'SettingsCategory.ui')),
                 ('/usr/share/applications', ('indicator-stickynotes.desktop',)),
                 ('Icons', glob.glob("Icons/*.png"))]

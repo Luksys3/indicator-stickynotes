@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.0"/>
-  <object class="GtkDialog" id="HTTPMonitorSettingsWindow">
+  <object class="GtkDialog" id="HTTPMonitorSettings">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">HTTP Monitor settings</property>
     <property name="default_width">340</property>
@@ -17,12 +17,12 @@
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
             <child>
-              <object class="GtkButton" id="Cancel">
-                <property name="label" translatable="yes">Cancel</property>
+              <object class="GtkButton" id="bCancel">
+                <property name="label">gtk-cancel</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="image_position">right</property>
+                <property name="use_stock">True</property>
                 <signal name="clicked" handler="stop_http_monitor" swapped="no"/>
               </object>
               <packing>
@@ -32,12 +32,12 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="Ok">
-                <property name="label" translatable="yes">Ok</property>
+              <object class="GtkButton" id="bOk">
+                <property name="label">gtk-ok</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="image_position">right</property>
+                <property name="use_stock">True</property>
                 <signal name="clicked" handler="start_http_monitor" swapped="no"/>
               </object>
               <packing>
@@ -66,7 +66,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkEntry" id="address">
+          <object class="GtkEntry" id="eAddress">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
           </object>
@@ -91,7 +91,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkEntry" id="updateInterval">
+          <object class="GtkEntry" id="eUpdateInterval">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="text" translatable="yes">300</property>
@@ -104,5 +104,9 @@
         </child>
       </object>
     </child>
+    <action-widgets>
+      <action-widget response="0">bCancel</action-widget>
+      <action-widget response="1">bOk</action-widget>
+    </action-widgets>
   </object>
 </interface>

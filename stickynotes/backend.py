@@ -18,9 +18,10 @@
 from datetime import datetime
 import uuid
 import json
+import urllib.request
 from os.path import expanduser
 
-from stickynotes.info import FALLBACK_PROPERTIES
+from stickynotes.info import FALLBACK_PROPERTIES, HTTP_MONITOR_DEFAUTLS
 
 class Note:
     def __init__(self, content=None, gui_class=None, noteset=None,
@@ -31,7 +32,7 @@ class Note:
         self.uuid = content.get('uuid')
         self.body = content.get('body','')
         self.properties = content.get("properties", {})
-        print('Properties:', self.properties)
+        self.http_monitor_settings = content.get("http_monitor_settings", HTTP_MONITOR_DEFAUTLS)
         self.category = category or content.get("cat", "")
         if not self.category in self.noteset.categories:
             self.category = ""
@@ -53,7 +54,8 @@ class Note:
         return {"uuid":self.uuid, "body":self.body,
                 "last_modified":self.last_modified.strftime(
                     "%Y-%m-%dT%H:%M:%S"), "properties":self.properties,
-                "cat": self.category}
+                "cat": self.category,
+                "http_monitor_settings": self.http_monitor_settings}
 
     def update(self,body=None):
         if not body == None:
@@ -86,9 +88,13 @@ class Note:
     def set_http_monitor_state(self, state):
         # if gui hasn't been initialized, just change the property
         if self.gui == None:
-            self.properties["http_monitor"] = state
+            self.properties["http_monitor_state"] = state
         else:
             self.gui.set_http_monitor_state(state)
+
+    def set_http_monitor_settings(self, settings):
+        for attr, value in settings.items():
+            self.http_monitor_settings[attr] = value
 
     def cat_prop(self, prop):
         """Gets a property of the note's category"""

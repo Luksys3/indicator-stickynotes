@@ -43,7 +43,7 @@ class StickyNote:
         self.note = note
         self.noteset = note.noteset
         self.locked = self.note.properties.get("locked", False)
-        self.http_monitor = self.note.properties.get("http_monitor", False)
+        self.http_monitor_state = self.note.properties.get("http_monitor_state", False)
 
         # Create menu
         self.menu = Gtk.Menu()
@@ -103,7 +103,7 @@ class StickyNote:
         self.set_locked_state(self.locked)
 
         # Set HTTP monitor state
-        self.set_http_monitor_state(self.http_monitor)
+        self.set_http_monitor_state(self.http_monitor_state)
 
         # call set_keep_above just to have the note appearing
         # above everything else.
@@ -168,7 +168,7 @@ class StickyNote:
         prop = {"position":self.winMain.get_position(),
                 "size":self.winMain.get_size(),
                 "locked":self.locked,
-                "http_monitor":self.http_monitor}
+                "http_monitor_state":self.http_monitor_state}
         if not self.winMain.get_visible():
             prop["position"] = self.note.properties.get("position", (10, 10))
             prop["size"] = self.note.properties.get("size", (200, 150))
@@ -200,7 +200,7 @@ class StickyNote:
         suffix = "-dark" if s >= thresh_sat else ""
         iconfiles = {"imgAdd":"add", "imgClose":"close", "imgDropdown":"menu",
                 "imgLock":"lock", "imgUnlock":"unlock",
-                "imgHTTPMonitorOn":"lock", "imgHTTPMonitorOff":"unlock",
+                "imgHTTPMonitorOn":"internet", "imgHTTPMonitorOff":"internet-off",
                 "imgResizeR":"resizer"}
         for img, filename in iconfiles.items():
             getattr(self, img).set_from_file(
@@ -236,6 +236,11 @@ class StickyNote:
         self.menu.append(mset)
         mset.show()
 
+        httpmset = Gtk.MenuItem(_("HTTP Monitor Settings"))
+        httpmset.connect("activate", self.show_http_monitor_settings)
+        self.menu.append(httpmset)
+        httpmset.show()
+
         sep = Gtk.SeparatorMenuItem()
         self.menu.append(sep)
         sep.show()
@@ -260,6 +265,9 @@ class StickyNote:
 
     def malways_on_top_toggled(self, widget, *args):
         self.winMain.set_keep_above(widget.get_active())
+
+    def show_http_monitor_settings(self, widget, *args):
+        HTTPMonitorSettingsDialog(self)
 
     def save(self, *args):
         self.note.noteset.save()
@@ -313,32 +321,22 @@ class StickyNote:
         self.set_locked_state(not self.locked)
 
     def set_http_monitor_state(self, state):
-        self.http_monitor = state
+        self.http_monitor_state = state
         self.bHTTPMonitor.set_image({True:self.imgHTTPMonitorOn,
-            False:self.imgHTTPMonitorOff}[self.http_monitor])
+            False:self.imgHTTPMonitorOff}[self.http_monitor_state])
         self.bHTTPMonitor.set_tooltip_text({True: _("Stop HTTP monitor"),
-            False: _("Start HTTP monitor")}[self.http_monitor])
+            False: _("Start HTTP monitor")}[self.http_monitor_state])
 
-    def start_http_monitor(self, *args):
-        print('Starting http monitor')
+    def toggle_http_monitor_clicked(self, *args):
+        if self.http_monitor_state == True:
+            self.set_http_monitor_state(False)
+        else:
+            if self.note.http_monitor_settings.get("address", '') == '':
+                dialog = HTTPMonitorSettingsDialog(self)
+                if dialog.get_window_response() != 1 or self.note.http_monitor_settings.get("address", '') == '':
+                    return
 
-    def stop_http_monitor(self, *args):
-        print('Stopping http monitor')
-
-    def http_monitor_clicked(self, *args):
-        print('Toggle http monitor')
-        # self.set_http_monitor_state(not self.http_monitor)
-        self.show_http_monitor_settings_dialog()
-
-    def show_http_monitor_settings_dialog(self):
-        glade_file = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                '..', "HTTPMonitorDialog.ui"))
-        self.builder = Gtk.Builder()
-        self.builder.add_from_file(glade_file)
-        self.builder.connect_signals(self)
-        winHTTPMonitor = self.builder.get_object("HTTPMonitorSettingsWindow")
-        ret = winHTTPMonitor.run()
-        winHTTPMonitor.destroy()
+            self.set_http_monitor_state(True)
 
     def focus_out(self, *args):
         print('Note saved.');
@@ -502,3 +500,35 @@ class SettingsDialog:
     def refresh_category_titles(self):
         for cid, catsettings in self.categories.items():
             catsettings.refresh_title()
+
+class HTTPMonitorSettingsDialog:
+    """Manages the GUI of the http monitor settings dialog"""
+    def __init__(self, stickyNote):
+        self.response = None
+        self.note = stickyNote.note
+
+        glade_file = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                '..', "HTTPMonitorSettings.ui"))
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file(glade_file)
+        self.builder.connect_signals(self)
+        widgets = ["eAddress", "eUpdateInterval"]
+        for w in widgets:
+            setattr(self, w, self.builder.get_object(w))
+        self.eAddress.set_text( self.note.http_monitor_settings.get("address", '') )
+        self.eUpdateInterval.set_text( self.note.http_monitor_settings.get("updateInterval", '') )
+        self.window = self.builder.get_object("HTTPMonitorSettings")
+        self.response = self.window.run()
+        if self.response == 1:
+            self.note.set_http_monitor_settings({ "address": self.eAddress.get_text(),
+                                                  "updateInterval": self.eUpdateInterval.get_text() })
+        self.window.destroy()
+
+    def get_window_response(self):
+        return self.response
+
+    def start_http_monitor(self, *args):
+        print('start_http_monitor')
+
+    def stop_http_monitor(self, *args):
+        print('stop_http_monitor')
