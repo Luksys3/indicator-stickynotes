@@ -23,7 +23,6 @@
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_stock">True</property>
-                <signal name="clicked" handler="stop_http_monitor" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -38,7 +37,6 @@
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_stock">True</property>
-                <signal name="clicked" handler="start_http_monitor" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">True</property>

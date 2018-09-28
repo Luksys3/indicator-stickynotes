@@ -20,6 +20,7 @@ import uuid
 import json
 import urllib.request
 from os.path import expanduser
+import threading, time
 
 from stickynotes.info import FALLBACK_PROPERTIES, HTTP_MONITOR_DEFAUTLS
 
@@ -30,9 +31,12 @@ class Note:
         self.noteset = noteset
         content = content or {}
         self.uuid = content.get('uuid')
-        self.body = content.get('body','')
+        self.body = content.get('body', '')
         self.properties = content.get("properties", {})
         self.http_monitor_settings = content.get("http_monitor_settings", HTTP_MONITOR_DEFAUTLS)
+        self.http_monitor_updater = HTTPMonitorUpdater(self,
+            self.http_monitor_settings['address'],
+            self.http_monitor_settings['updateInterval'])
         self.category = category or content.get("cat", "")
         if not self.category in self.noteset.categories:
             self.category = ""
@@ -57,7 +61,7 @@ class Note:
                 "cat": self.category,
                 "http_monitor_settings": self.http_monitor_settings}
 
-    def update(self,body=None):
+    def update(self, body=None):
         if not body == None:
             self.body = body
             self.last_modified = datetime.now()
@@ -95,6 +99,20 @@ class Note:
     def set_http_monitor_settings(self, settings):
         for attr, value in settings.items():
             self.http_monitor_settings[attr] = value
+        self.http_monitor_updater.set_address(self.http_monitor_settings["address"])
+        self.http_monitor_updater.set_update_interval(self.http_monitor_settings["updateInterval"])
+
+    def start_http_monitor(self):
+        self.http_monitor_updater.start()
+        # self.http_monitor_updater = HTTPMonitorUpdater(self,
+        #     self.http_monitor_settings['address'],
+        #     self.http_monitor_settings['updateInterval'])
+
+    def stop_http_monitor(self):
+        self.http_monitor_updater.stop()
+        # self.http_monitor_updater = HTTPMonitorUpdater(self,
+        #     self.http_monitor_settings['address'],
+        #     self.http_monitor_settings['updateInterval'])
 
     def cat_prop(self, prop):
         """Gets a property of the note's category"""
@@ -205,6 +223,63 @@ class NoteSet:
             return FALLBACK_PROPERTIES[prop]
         else:
             raise ValueError("Unknown property")
+
+
+class HTTPMonitorUpdater:
+    def __init__(self, note, address, update_interval):
+        self.note = note
+        self.address = address
+        self.update_interval = update_interval
+        # self.update()
+        self.interval = None
+
+    def update(self):
+        contents = urllib.request.urlopen(self.address).read()
+        self.note.update(contents.decode("utf-8"))
+        # contents = "fatman/anaconda2/envs/dev3/lib/python3.6/site-packages/torch/_C.cpython-36m"
+        # self.note.update(contents)
+        if self.note.gui != None:
+            self.note.gui.update_body()
+        # print('Updated from: ', self.address, '\n Contents:', contents.decode("utf-8"))
+        print('(', time.time() ,') Updated from: ', self.address, '\n Contents:', contents)
+
+    def start(self):
+        print('Start')
+        if self.interval != None:
+            self.stop()
+        self.interval = setInterval(self.update, 5)
+
+    def stop(self):
+        print('Stop')
+        if self.interval != None:
+            self.interval.cancel()
+            self.interval = None
+
+    def set_address(self, address):
+        print('address', address)
+        self.address = address
+
+    def set_update_interval(self, update_interval):
+        self.update_interval = update_interval
+
+
+class setInterval:
+    def __init__(self,action,interval) :
+        self.interval=interval
+        self.action=action
+        self.stopEvent=threading.Event()
+        thread=threading.Thread(target=self.__setInterval)
+        thread.start()
+
+    def __setInterval(self) :
+        nextTime=time.time()+self.interval
+        while not self.stopEvent.wait(nextTime-time.time()) :
+            nextTime+=self.interval
+            self.action()
+
+    def cancel(self) :
+        self.stopEvent.set()
+
 
 class dGUI:
     """Dummy GUI"""

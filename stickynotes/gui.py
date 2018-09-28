@@ -82,7 +82,7 @@ class StickyNote:
         # Set text buffer
         self.bbody = GtkSource.Buffer()
         self.bbody.begin_not_undoable_action()
-        self.bbody.set_text(self.note.body)
+        self.update_body()
         self.bbody.set_highlight_matching_brackets(False)
         self.bbody.end_not_undoable_action()
         self.txtNote.set_buffer(self.bbody)
@@ -116,7 +116,6 @@ class StickyNote:
         # a different window
         self.winMain.set_keep_above(False)
 
-
     # (re-)show the sticky note after it has been hidden getting a sticky note
     # to show itself was problematic after a "show desktop" command in unity.
     # (see bug lp:1105948).  Reappearance of dialog is problematic for any
@@ -148,6 +147,7 @@ class StickyNote:
 
     def update_note(self):
         """Update the underlying note object"""
+        print('CALLED: Update the underlying note object')
         self.note.update(self.bbody.get_text(self.bbody.get_start_iter(),
             self.bbody.get_end_iter(), True))
 
@@ -173,6 +173,10 @@ class StickyNote:
             prop["position"] = self.note.properties.get("position", (10, 10))
             prop["size"] = self.note.properties.get("size", (200, 150))
         return prop
+
+    def update_body(self):
+        """Update the body"""
+        self.bbody.set_text(self.note.body)
 
     def update_font(self):
         """Updates the font"""
@@ -326,6 +330,10 @@ class StickyNote:
             False:self.imgHTTPMonitorOff}[self.http_monitor_state])
         self.bHTTPMonitor.set_tooltip_text({True: _("Stop HTTP monitor"),
             False: _("Start HTTP monitor")}[self.http_monitor_state])
+        if state == True:
+            self.note.start_http_monitor()
+        else:
+            self.note.stop_http_monitor()
 
     def toggle_http_monitor_clicked(self, *args):
         if self.http_monitor_state == True:
@@ -526,9 +534,3 @@ class HTTPMonitorSettingsDialog:
 
     def get_window_response(self):
         return self.response
-
-    def start_http_monitor(self, *args):
-        print('start_http_monitor')
-
-    def stop_http_monitor(self, *args):
-        print('stop_http_monitor')
